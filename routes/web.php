@@ -46,7 +46,14 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/reservations/export', [AdminReservationController::class, 'export'])
          ->name('reservations.export');
 
+
          
+        // Menu Items Management
+        Route::get('/menu-items/export', [AdminMenuItemController::class, 'export'])
+        ->name('menu-items.export');
+   Route::resource('menu-items', AdminMenuItemController::class);
+
+
     // Admin reservation management
     Route::resource('reservations', AdminReservationController::class);
 });

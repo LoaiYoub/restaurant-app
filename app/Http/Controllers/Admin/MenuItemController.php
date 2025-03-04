@@ -8,6 +8,9 @@ use App\Models\MenuItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use League\Csv\Writer;
 
 class MenuItemController extends Controller
 {
@@ -19,30 +22,92 @@ class MenuItemController extends Controller
         $query = MenuItem::with('category');
 
         // Handle search
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->search;
-            $query->where('name', 'like', "%{$search}%")
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%");
+            });
         }
 
         // Handle filters
-        if ($request->has('category')) {
+        if ($request->filled('category')) {
             $query->where('category_id', $request->category);
         }
 
-        if ($request->has('availability')) {
-            $query->where('availability', $request->availability);
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
         // Handle sorting
-        $sortField = $request->sort_by ?? 'name';
-        $sortDirection = $request->sort_direction ?? 'asc';
-        $query->orderBy($sortField, $sortDirection);
+        $sortField = $request->input('sort_by', 'name');
+        $sortDirection = $request->input('sort_direction', 'asc');
 
-        $menuItems = $query->paginate(10);
+        // Validate sort field to prevent SQL injection
+        $allowedSortFields = ['name', 'price', 'status', 'created_at'];
+        if (in_array($sortField, $allowedSortFields)) {
+            $query->orderBy($sortField, $sortDirection);
+        } else {
+            $query->orderBy('name', 'asc');
+        }
+
+        $menuItems = $query->paginate(10)->withQueryString();
         $categories = Category::all();
 
         return view('admin.menu-items.index', compact('menuItems', 'categories'));
+    }
+
+    public function export(Request $request)
+    {
+        $query = MenuItem::with('category');
+
+        // Apply the same filters as index
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $menuItems = $query->get();
+
+        // Create CSV
+        $csv = Writer::createFromString('');
+        $csv->insertOne([
+            'Name',
+            'Description',
+            'Category',
+            'Price',
+            'Status',
+            'Created At'
+        ]);
+
+        foreach ($menuItems as $item) {
+            $csv->insertOne([
+                $item->name,
+                $item->description,
+                $item->category->name,
+                $item->price,
+                $item->status,
+                $item->created_at->format('Y-m-d H:i:s')
+            ]);
+        }
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="menu-items.csv"',
+        ];
+
+        return response($csv->toString(), 200, $headers);
     }
 
     /**
@@ -59,29 +124,50 @@ class MenuItemController extends Controller
      */
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
+        // Transform checkbox values before validation
+        $data = $request->all();
+        $data['is_vegetarian'] = $request->has('is_vegetarian');
+        $data['is_gluten_free'] = $request->has('is_gluten_free');
+        $data['is_featured'] = $request->has('is_featured');
+
+        // Validate the request
+        $validatedData = Validator::make($data, [
             'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
-            'category_id' => 'required|exists:categories,id',
-            'image' => 'nullable|image|max:2048',
+            'status' => 'required|in:active,inactive',
+            'preparation_time' => 'nullable|integer|min:1',
+            'calories' => 'nullable|integer|min:0',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'is_vegetarian' => 'boolean',
             'is_gluten_free' => 'boolean',
             'is_featured' => 'boolean',
-            'preparation_time' => 'nullable|integer|min:0',
-            'calories' => 'nullable|integer|min:0',
-            'availability' => ['required', Rule::in(['available', 'sold_out', 'seasonal'])],
-        ]);
+        ])->validate();
 
-        if ($request->hasFile('image')) {
-            $validatedData['image_path'] = $request->file('image')->store('menu-items', 'public');
+        try {
+            // Handle image upload
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
+                $imageName = time() . '_' . $image->getClientOriginalName();
+                $imagePath = $image->storeAs('menu-items', $imageName, 'public');
+                $validatedData['image_path'] = $imagePath;
+            }
+
+            // Create menu item
+            $menuItem = MenuItem::create($validatedData);
+
+            return redirect()
+                ->route('admin.menu-items.index')
+                ->with('success', 'Menu item created successfully.');
+
+        } catch (\Exception $e) {
+            Log::error('Error creating menu item: ' . $e->getMessage());
+
+            return back()
+                ->withInput()
+                ->withErrors(['error' => 'Failed to create menu item. Please try again.']);
         }
-
-        MenuItem::create($validatedData);
-
-        return redirect()
-            ->route('admin.menu-items.index')
-            ->with('success', 'Menu item created successfully.');
     }
 
     /**
@@ -97,65 +183,88 @@ class MenuItemController extends Controller
      * Show the form for editing the specified resource.
      */
     public function edit(MenuItem $menuItem)
-    {
-        $categories = Category::all();
-        return view('admin.menu-items.edit', compact('menuItem', 'categories'));
-    }
+{
+    $categories = Category::all();
+    return view('admin.menu-items.edit', compact('menuItem', 'categories'));
+}
 
     /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, MenuItem $menuItem)
     {
-        $validatedData = $request->validate([
+        // Transform checkbox values before validation
+        $data = $request->all();
+        $data['is_vegetarian'] = $request->has('is_vegetarian');
+        $data['is_gluten_free'] = $request->has('is_gluten_free');
+        $data['is_featured'] = $request->has('is_featured');
+
+        // Validate the request
+        $validatedData = Validator::make($data, [
             'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
-            'category_id' => 'required|exists:categories,id',
-            'image' => 'nullable|image|max:2048',
+            'status' => 'required|in:active,inactive',
+            'preparation_time' => 'nullable|integer|min:1',
+            'calories' => 'nullable|integer|min:0',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'is_vegetarian' => 'boolean',
             'is_gluten_free' => 'boolean',
             'is_featured' => 'boolean',
-            'preparation_time' => 'nullable|integer|min:0',
-            'calories' => 'nullable|integer|min:0',
-            'availability' => ['required', Rule::in(['available', 'sold_out', 'seasonal'])],
-        ]);
+        ])->validate();
 
-        // Set boolean fields to false if not present in the request
-        $validatedData['is_vegetarian'] = $request->has('is_vegetarian');
-        $validatedData['is_gluten_free'] = $request->has('is_gluten_free');
-        $validatedData['is_featured'] = $request->has('is_featured');
+        try {
+            // Handle image upload
+            if ($request->hasFile('image')) {
+                // Delete old image if exists
+                if ($menuItem->image_path) {
+                    Storage::disk('public')->delete($menuItem->image_path);
+                }
 
-        if ($request->hasFile('image')) {
-            // Delete old image if exists
-            if ($menuItem->image_path) {
-                Storage::disk('public')->delete($menuItem->image_path);
+                $image = $request->file('image');
+                $imageName = time() . '_' . $image->getClientOriginalName();
+                $imagePath = $image->storeAs('menu-items', $imageName, 'public');
+                $validatedData['image_path'] = $imagePath;
             }
 
-            $validatedData['image_path'] = $request->file('image')->store('menu-items', 'public');
+            // Update menu item
+            $menuItem->update($validatedData);
+
+            return redirect()
+                ->route('admin.menu-items.index')
+                ->with('success', 'Menu item updated successfully.');
+
+        } catch (\Exception $e) {
+            Log::error('Error updating menu item: ' . $e->getMessage());
+
+            return back()
+                ->withInput()
+                ->withErrors(['error' => 'Failed to update menu item. Please try again.']);
         }
-
-        $menuItem->update($validatedData);
-
-        return redirect()
-            ->route('admin.menu-items.index')
-            ->with('success', 'Menu item updated successfully.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(MenuItem $menuItem)
-    {
-        // Delete image if exists
+{
+    try {
+        // Delete the associated image if it exists
         if ($menuItem->image_path) {
             Storage::disk('public')->delete($menuItem->image_path);
         }
 
+        // Delete the menu item
         $menuItem->delete();
 
         return redirect()
             ->route('admin.menu-items.index')
             ->with('success', 'Menu item deleted successfully.');
+    } catch (\Exception $e) {
+        Log::error('Error deleting menu item: ' . $e->getMessage());
+
+        return back()->withErrors(['error' => 'Failed to delete menu item. Please try again.']);
     }
+}
 }
