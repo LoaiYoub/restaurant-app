@@ -33,10 +33,20 @@ Route::middleware('auth')->group(function () {
 // Admin routes
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/reservations', [AdminReservationController::class, 'index'])->name('reservations');
 
     // Admin menu management
     Route::resource('menu-items', AdminMenuItemController::class);
 
+    // Bulk update route for reservations
+    Route::post('/reservations/bulk-update', [AdminReservationController::class, 'bulkUpdate'])
+         ->name('reservations.bulk-update');
+
+    // Export reservations to CSV
+    Route::get('/reservations/export', [AdminReservationController::class, 'export'])
+         ->name('reservations.export');
+
+         
     // Admin reservation management
     Route::resource('reservations', AdminReservationController::class);
 });
