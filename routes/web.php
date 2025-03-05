@@ -8,6 +8,7 @@ use App\Http\Controllers\MenuController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\TableController as AdmintableController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -32,34 +33,38 @@ Route::middleware('auth')->group(function () {
 });
 
 // Admin routes
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/reservations', [AdminReservationController::class, 'index'])->name('reservations');
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Dashboard with both route names
+    Route::get('/admin/dashboard', [DashboardController::class, 'index'])
+        ->name('admin.dashboard');
 
-    // Admin menu management
-    Route::resource('menu-items', AdminMenuItemController::class);
+    // Admin routes group
+    Route::prefix('admin')->name('admin.')->group(function () {
+        // Admin menu management
+        Route::resource('menu-items', AdminMenuItemController::class);
 
-    // Bulk update route for reservations
-    Route::post('/reservations/bulk-update', [AdminReservationController::class, 'bulkUpdate'])
-         ->name('reservations.bulk-update');
+        // Bulk update route for reservations
+        Route::post('/reservations/bulk-update', [AdminReservationController::class, 'bulkUpdate'])
+             ->name('reservations.bulk-update');
 
-    // Export reservations to CSV
-    Route::get('/reservations/export', [AdminReservationController::class, 'export'])
-         ->name('reservations.export');
+        // Export reservations to CSV
+        Route::get('/reservations/export', [AdminReservationController::class, 'export'])
+             ->name('reservations.export');
 
+        // Tables Management
+        Route::resource('tables', AdmintableController::class);
 
-    // Categories Management
-    Route::resource('categories', CategoryController::class);
-
+        // Categories Management
+        Route::resource('categories', CategoryController::class);
 
         // Menu Items Management
-        Route::get('/menu-items/export', [AdminMenuItemController::class, 'export'])
-        ->name('menu-items.export');
-   Route::resource('menu-items', AdminMenuItemController::class);
+        Route::get('menu-items/export', [AdminMenuItemController::class, 'export'])
+             ->name('menu-items.export');
+        Route::resource('menu-items', AdminMenuItemController::class);
 
-
-    // Admin reservation management
-    Route::resource('reservations', AdminReservationController::class);
+        // Admin reservation management
+        Route::resource('reservations', AdminReservationController::class);
+    });
 });
 
 require __DIR__.'/auth.php';

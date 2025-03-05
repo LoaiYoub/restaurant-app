@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use League\Csv\Writer;
 
 class MenuItemController extends Controller
@@ -61,53 +62,73 @@ class MenuItemController extends Controller
     {
         $query = MenuItem::with('category');
 
-        // Apply the same filters as index
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('category')) {
+        // Apply filters if they exist
+        if ($request->has('category')) {
             $query->where('category_id', $request->category);
         }
-
-        if ($request->filled('status')) {
+        if ($request->has('status')) {
             $query->where('status', $request->status);
+        }
+        if ($request->has('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('description', 'like', '%' . $request->search . '%');
+            });
         }
 
         $menuItems = $query->get();
 
-        // Create CSV
-        $csv = Writer::createFromString('');
-        $csv->insertOne([
-            'Name',
-            'Description',
-            'Category',
-            'Price',
-            'Status',
-            'Created At'
-        ]);
-
-        foreach ($menuItems as $item) {
-            $csv->insertOne([
-                $item->name,
-                $item->description,
-                $item->category->name,
-                $item->price,
-                $item->status,
-                $item->created_at->format('Y-m-d H:i:s')
-            ]);
-        }
+        $fileName = 'menu-items-' . date('Y-m-d') . '.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="menu-items.csv"',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
         ];
 
-        return response($csv->toString(), 200, $headers);
+        $callback = function() use ($menuItems) {
+            $file = fopen('php://output', 'w');
+
+            // Add headers
+            fputcsv($file, [
+                'ID',
+                'Name',
+                'Category',
+                'Description',
+                'Price',
+                'Status',
+                'Preparation Time',
+                'Calories',
+                'Is Vegetarian',
+                'Is Gluten Free',
+                'Is Featured',
+                'Created At'
+            ]);
+
+            // Add data
+            foreach ($menuItems as $item) {
+                fputcsv($file, [
+                    $item->id,
+                    $item->name,
+                    $item->category->name,
+                    $item->description,
+                    $item->price,
+                    $item->status,
+                    $item->preparation_time,
+                    $item->calories,
+                    $item->is_vegetarian ? 'Yes' : 'No',
+                    $item->is_gluten_free ? 'Yes' : 'No',
+                    $item->is_featured ? 'Yes' : 'No',
+                    $item->created_at->format('Y-m-d H:i:s')
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return new StreamedResponse($callback, 200, $headers);
     }
 
     /**
