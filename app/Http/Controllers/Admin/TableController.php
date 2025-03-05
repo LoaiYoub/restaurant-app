@@ -10,7 +10,7 @@ class TableController extends Controller
 {
     public function index()
     {
-        $tables = Table::orderBy('name')->get();
+        $tables = Table::orderBy('table_number')->get();
         return view('admin.tables.index', compact('tables'));
     }
 
@@ -20,43 +20,41 @@ class TableController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:tables',
-            'capacity' => 'required|integer|min:1',
-            'status' => 'required|in:available,occupied,reserved,maintenance',
-            'location' => 'nullable|string|max:255',
-            'notes' => 'nullable|string'
-        ]);
+{
+    $validated = $request->validate([
+        'table_number' => 'required|string|max:255|unique:tables',
+        'capacity' => 'required|integer|min:1',
+        'status' => 'required|in:available,occupied,reserved,maintenance',
+        'location' => 'nullable|string|max:255'
+    ]);
 
-        Table::create($validated);
+    Table::create($validated);
 
-        return redirect()
-            ->route('admin.tables.index')
-            ->with('success', 'Table created successfully.');
-    }
+    return redirect()
+        ->route('admin.tables.index')
+        ->with('success', 'Table created successfully.');
+}
 
-    public function edit(Table $table)
-    {
-        return view('admin.tables.edit', compact('table'));
-    }
+public function edit(Table $table)
+{
+    return view('admin.tables.edit', compact('table'));
+}
 
-    public function update(Request $request, Table $table)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:tables,name,' . $table->id,
-            'capacity' => 'required|integer|min:1',
-            'status' => 'required|in:available,occupied,reserved,maintenance',
-            'location' => 'nullable|string|max:255',
-            'notes' => 'nullable|string'
-        ]);
+public function update(Request $request, Table $table)
+{
+    $validated = $request->validate([
+        'table_number' => 'required|string|max:255|unique:tables,table_number,' . $table->id,
+        'capacity' => 'required|integer|min:1',
+        'status' => 'required|in:available,occupied,reserved,maintenance',
+        'location' => 'nullable|string|max:255'
+    ]);
 
-        $table->update($validated);
+    $table->update($validated);
 
-        return redirect()
-            ->route('admin.tables.index')
-            ->with('success', 'Table updated successfully.');
-    }
+    return redirect()
+        ->route('admin.tables.index')
+        ->with('success', 'Table updated successfully.');
+}
 
     public function destroy(Table $table)
     {

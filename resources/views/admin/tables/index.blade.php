@@ -8,13 +8,19 @@
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
             <div class="p-6 text-gray-900">
                 <!-- Header -->
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-semibold">Restaurant Tables</h2>
-                    <a href="{{ route('admin.tables.create') }}"
-                        class="inline-flex items-center px-4 py-2 bg-indigo-600 rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
-                        <i class="fas fa-plus mr-2"></i> New Table
-                    </a>
-                </div>
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-semibold">Restaurant Tables</h2>
+    <div class="flex space-x-4">
+        <a href="{{ route('admin.dashboard') }}"
+            class="inline-flex items-center px-4 py-2 bg-gray-800 rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
+            <i class="fas fa-home mr-2"></i> Dashboard
+        </a>
+        <a href="{{ route('admin.tables.create') }}"
+            class="inline-flex items-center px-4 py-2 bg-indigo-600 rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
+            <i class="fas fa-plus mr-2"></i> New Table
+        </a>
+    </div>
+</div>
 
                 <!-- Success Message -->
                 @if (session('success'))
