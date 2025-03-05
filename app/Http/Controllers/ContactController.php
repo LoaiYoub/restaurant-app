@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ContactFormMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -21,8 +22,8 @@ class ContactController extends Controller
             'message' => 'required|string'
         ]);
 
-        // TODO: Add email sending logic here
-        // For now, just redirect with success message
+        // Send email
+        Mail::to(config('mail.from.address'))->send(new ContactFormMail($validated));
 
         return redirect()
             ->route('contact')
