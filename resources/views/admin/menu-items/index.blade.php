@@ -9,12 +9,20 @@
             <div class="p-6 text-gray-900">
                 <!-- Header -->
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-semibold">Menu Items</h2>
+                    <div class="flex items-center space-x-4">
+                        <h2 class="text-2xl font-semibold">Menu Items</h2>
+                        <a href="{{ route('admin.categories.index') }}"
+                            class="inline-flex items-center px-4 py-2 bg-green-600 rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
+                            <i class="fas fa-tags mr-2"></i> Manage Categories
+                        </a>
+                    </div>
                     <div class="space-x-2">
-                        <a href="{{ route('admin.menu-items.export', request()->query()) }}" class="inline-flex items-center px-4 py-2 bg-gray-800 rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
+                        <a href="{{ route('admin.menu-items.export', request()->query()) }}"
+                            class="inline-flex items-center px-4 py-2 bg-gray-800 rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
                             <i class="fas fa-file-export mr-2"></i> Export CSV
                         </a>
-                        <a href="{{ route('admin.menu-items.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
+                        <a href="{{ route('admin.menu-items.create') }}"
+                            class="inline-flex items-center px-4 py-2 bg-indigo-600 rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
                             <i class="fas fa-plus mr-2"></i> New Menu Item
                         </a>
                     </div>
@@ -106,16 +114,20 @@
                                             {{ ucfirst($item->status) }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div class="flex items-center justify-end space-x-2" style="width: fit-content;">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <div class="flex space-x-2">
+                                            <a href="{{ route('admin.menu-items.show', $item) }}"
+                                                class="text-indigo-600 hover:text-indigo-900">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
                                             <a href="{{ route('admin.menu-items.edit', $item) }}"
-                                                class="inline-flex items-center px-3 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                                Edit
+                                                class="text-blue-600 hover:text-blue-900">
+                                                <i class="fas fa-edit"></i>
                                             </a>
                                             <button type="button"
-                                                class="inline-flex items-center px-3 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                                class="text-red-600 hover:text-red-900"
                                                 onclick="document.getElementById('deleteModal{{ $item->id }}').classList.remove('hidden')">
-                                                Delete
+                                                <i class="fas fa-trash"></i>
                                             </button>
                                         </div>
                                     </td>

@@ -175,7 +175,7 @@ class MenuItemController extends Controller
      */
     public function show(MenuItem $menuItem)
     {
-        $menuItem->load(['category', 'addons', 'reviews.user']);
+        $menuItem->load(['category', 'reviews.user']);
         return view('admin.menu-items.show', compact('menuItem'));
     }
 

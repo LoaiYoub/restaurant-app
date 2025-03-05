@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
+
 class MenuItem extends Model
 {
     use HasFactory;
@@ -107,4 +108,14 @@ class MenuItem extends Model
     {
         return '$' . number_format($this->price, 2);
     }
+    public function addons(): HasMany
+    {
+        return $this->hasMany(Addon::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
 }

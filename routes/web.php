@@ -7,6 +7,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Admin\CategoryController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -47,7 +48,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
          ->name('reservations.export');
 
 
-         
+    // Categories Management
+    Route::resource('categories', CategoryController::class);
+
+
         // Menu Items Management
         Route::get('/menu-items/export', [AdminMenuItemController::class, 'export'])
         ->name('menu-items.export');
