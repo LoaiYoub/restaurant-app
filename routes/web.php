@@ -17,7 +17,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/contact', [ContactController::class, 'index'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
-
+Route::get('/events', [EventController::class, 'index'])->name('events');
 
 // Menu routes
 Route::get('/menu', [MenuController::class, 'index'])->name('menu.index');

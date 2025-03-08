@@ -27,21 +27,6 @@
         </div>
     </div>
 
-    <!-- Special Announcement Banner (New) -->
-    <div class="bg-amber-600 text-white py-4">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row items-center justify-between">
-                <div class="flex items-center">
-                    <i class="fas fa-bell text-amber-200 text-xl mr-3"></i>
-                    <p class="font-medium">Special Event: Wine Tasting Evening - Every Friday | 7:00 PM</p>
-                </div>
-                <a href="{{ route('events') }}" class="mt-3 md:mt-0 px-4 py-2 bg-white text-amber-600 rounded-md font-medium hover:bg-amber-50 transition">
-                    Learn More
-                </a>
-            </div>
-        </div>
-    </div>
-
     <!-- Featured Items Section with Enhanced Cards -->
     <div class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
